@@ -1,3 +1,5 @@
+# tells the LLM to return only executable Python code, without Markdown/explanations.
+
 SYSTEM_PROMPT = """
 You are a Python code generator.
 

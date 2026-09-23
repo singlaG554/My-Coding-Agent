@@ -1,3 +1,5 @@
+# communicates with Groq and generates both code and appropriate filename
+
 import os
 
 from dotenv import load_dotenv
@@ -69,3 +71,46 @@ def generate_filename(task):
     filename = response.choices[0].message.content.strip()
 
     return filename
+
+# fixes the code if execution of generated code, 
+# by agent fails to produce required output
+def fix_code(code, error):
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": """
+You are a Python code debugging assistant.
+
+Your job is to fix Python code that failed during execution.
+
+Rules:
+1. Return ONLY valid Python code.
+2. Do NOT return Markdown.
+3. Do NOT use ```python or ``` code fences.
+4. Do NOT provide explanations.
+5. Fix the code based on the provided error.
+6. Preserve the original task and intended behavior.
+7. The corrected code must be directly executable as a Python file.
+"""
+            },
+            {
+                "role": "user",
+                "content": f"""
+The following Python code failed during execution.
+
+CODE:
+{code}
+
+ERROR:
+{error}
+
+Fix the code and return ONLY the corrected Python code.
+"""
+            }
+        ],
+        temperature=0
+    )
+
+    return response.choices[0].message.content

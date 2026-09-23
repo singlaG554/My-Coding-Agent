@@ -1,0 +1,69 @@
+import subprocess
+import sys
+import tempfile
+import os
+
+
+def execute_code(code, timeout=10):
+    """
+    Execute generated Python code safely in a separate process.
+    Returns output, error, and success status.
+    """
+
+    temp_file_path = None
+
+    try:
+        # Create a temporary Python file
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".py",
+            delete=False,
+            encoding="utf-8"
+        ) as temp_file:
+
+            temp_file.write(code)
+            temp_file_path = temp_file.name
+
+        # Execute the temporary Python file
+        result = subprocess.run(
+            [sys.executable, temp_file_path],
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+
+        # If return code is 0, execution succeeded
+        if result.returncode == 0:
+            return result.stdout, "", True
+
+        # Program ran but produced an error
+        return result.stdout, result.stderr, False
+
+    except subprocess.TimeoutExpired:
+        return "", "Execution timed out.", False
+
+    except Exception as e:
+        return "", str(e), False
+
+    finally:
+        # Delete the temporary file
+        if temp_file_path and os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+
+
+# if __name__ == "__main__":
+    code = """
+print("Hello from generated code!")
+print(10/0)
+"""
+
+    output, error, success = execute_code(code)
+
+    print("OUTPUT:")
+    print(output)
+
+    print("ERROR:")
+    print(error)
+
+    print("SUCCESS:")
+    print(success)
